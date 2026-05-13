@@ -81,17 +81,24 @@ export function Hero() {
   }, []);
 
   // Привязываем currentTime к прогрессу скролла
+  // Батчим scrubbing через rAF: не дёргаем video.currentTime на каждый scroll-event,
+  // а копим последнее значение и применяем 1 раз за visual frame. Так декодер успевает.
+  const pendingTimeRef = useRef<number | null>(null);
+  const rafIdRef = useRef<number | null>(null);
   useMotionValueEvent(videoProgress, "change", (v) => {
-    const video = videoRef.current;
-    if (!video || !duration) return;
-    const t = Math.min(duration - 0.05, Math.max(0, v * duration));
-    try {
-      video.currentTime = t;
-    } catch {}
+    if (!duration) return;
+    pendingTimeRef.current = Math.min(duration - 0.05, Math.max(0, v * duration));
+    if (rafIdRef.current !== null) return;
+    rafIdRef.current = requestAnimationFrame(() => {
+      rafIdRef.current = null;
+      const video = videoRef.current;
+      const t = pendingTimeRef.current;
+      if (!video || t === null) return;
+      try {
+        video.currentTime = t;
+      } catch {}
+    });
   });
-
-  // Симметричный pingpong зум: 1.0 → 1.12 → 1.0
-  const videoScale = useTransform(scrollYProgress, [0, 0.5, 1], [1.0, 1.12, 1.0]);
 
   // Лёгкое pingpong затемнение тёплым тоном (не чёрный)
   const dimming = useTransform(scrollYProgress, [0, 0.5, 1], [0.32, 0.22, 0.32]);
@@ -121,26 +128,21 @@ export function Hero() {
       ref={ref}
       id="top"
       className="relative bg-[#2A241D]"
-      style={{ height: "380vh" }}
+      style={{ height: "300vh" }}
     >
       <div className="sticky top-0 h-screen w-full overflow-hidden">
-        {/* Видео-фон со scroll scrubbing — на всех ширинах. Poster держит первый кадр пока подгружается mp4. */}
-        <motion.div
-          style={{ scale: videoScale }}
-          className="absolute inset-0 will-change-transform"
-        >
-          <video
-            ref={videoRef}
-            src="/video/material-to-building-scrub.mp4"
-            poster="/images/hero/main.webp"
-            muted
-            playsInline
-            preload="auto"
-            tabIndex={-1}
-            aria-hidden
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-          />
-        </motion.div>
+        {/* Видео-фон со scroll scrubbing. Poster держит первый кадр пока подгружается mp4. */}
+        <video
+          ref={videoRef}
+          src="/video/material-to-building-scrub.mp4"
+          poster="/images/hero/main.webp"
+          muted
+          playsInline
+          preload="auto"
+          tabIndex={-1}
+          aria-hidden
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+        />
 
         {/* Лёгкое тёплое затемнение для читаемости текста (не чёрное) */}
         <motion.div
