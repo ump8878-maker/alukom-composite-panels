@@ -8,6 +8,7 @@ import {
   useMotionValueEvent,
   type MotionValue,
 } from "framer-motion";
+
 import { ArrowRight, Download, ShieldCheck, ArrowDown } from "lucide-react";
 import { Container } from "../ui/Container";
 
@@ -37,8 +38,9 @@ export function Hero() {
     offset: ["start start", "end end"],
   });
 
-  // Pingpong: 0→0.5 — вперёд, 0.5→1 — назад
-  const videoProgress = useTransform(scrollYProgress, [0, 0.5, 1], [0, 1, 0]);
+  // Инвертированный pingpong: на 0 и 1 — последний кадр (здание широко),
+  // в середине 0.5 — первый кадр (макро). Скроллим вниз: здание → приближается → макро → отдаляется → здание.
+  const videoProgress = useTransform(scrollYProgress, [0, 0.5, 1], [1, 0, 1]);
 
   // Запускаем видео коротко чтобы Safari прогрузил кадры, потом ставим на паузу.
   // Это критично для scrubbing — без user-initiated play seek в Safari работает с лагами.
@@ -58,7 +60,8 @@ export function Hero() {
         setTimeout(() => {
           if (stopped) return;
           video.pause();
-          video.currentTime = 0;
+          // Стартовое состояние = последний кадр (широкий план здания)
+          video.currentTime = video.duration - 0.05;
         }, 80);
       }).catch(() => {
         // autoplay заблокирован — всё равно пробуем скруббить
@@ -90,8 +93,8 @@ export function Hero() {
   // Симметричный pingpong зум: 1.0 → 1.12 → 1.0
   const videoScale = useTransform(scrollYProgress, [0, 0.5, 1], [1.0, 1.12, 1.0]);
 
-  // Симметричное pingpong затемнение
-  const dimming = useTransform(scrollYProgress, [0, 0.5, 1], [0.55, 0.4, 0.55]);
+  // Лёгкое pingpong затемнение тёплым тоном (не чёрный)
+  const dimming = useTransform(scrollYProgress, [0, 0.5, 1], [0.32, 0.22, 0.32]);
 
   // === Симметричный pingpong текст: выезжает снизу к пику 0.5, уезжает вниз обратно ===
   const titleY = useTransform(scrollYProgress, [0, 0.2, 0.5, 0.8, 1], [80, 0, 0, 0, 80]);
@@ -103,8 +106,10 @@ export function Hero() {
   const ctaY = useTransform(scrollYProgress, [0.08, 0.28, 0.5, 0.72, 0.92], [50, 0, 0, 0, 50]);
   const ctaOpacity = useTransform(scrollYProgress, [0.08, 0.22, 0.5, 0.78, 0.92], [0, 1, 1, 1, 0]);
 
-  const kpiY = useTransform(scrollYProgress, [0.16, 0.4, 0.5, 0.6, 0.84, 0.94], [80, 0, 0, 0, 0, 80]);
-  const kpiOpacity = useTransform(scrollYProgress, [0.16, 0.36, 0.5, 0.64, 0.84, 0.94], [0, 1, 1, 1, 1, 0]);
+  // KPI обёртка: появляется с 0.16-0.36, ВИДИМА до 0.92 (пока цифры считаются вверх и обратно).
+  // Уезжает только в самом конце 0.92-0.98 — чтобы реверс отсчёта был на экране.
+  const kpiY = useTransform(scrollYProgress, [0.16, 0.4, 0.92, 1], [80, 0, 0, 80]);
+  const kpiOpacity = useTransform(scrollYProgress, [0.16, 0.36, 0.92, 0.98], [0, 1, 1, 0]);
 
   const badgeY = useTransform(scrollYProgress, [0, 0.06, 0.5, 0.94, 1], [-30, 0, 0, 0, -30]);
   const badgeOpacity = useTransform(scrollYProgress, [0, 0.06, 0.5, 0.94, 1], [0, 1, 1, 1, 0]);
@@ -115,8 +120,8 @@ export function Hero() {
     <section
       ref={ref}
       id="top"
-      className="relative bg-[color:var(--color-dark)]"
-      style={{ height: "280vh" }}
+      className="relative bg-[#2A241D]"
+      style={{ height: "380vh" }}
     >
       <div className="sticky top-0 h-screen w-full overflow-hidden">
         {/* Видео-фон со scroll scrubbing — на всех ширинах. Poster держит первый кадр пока подгружается mp4. */}
@@ -137,20 +142,20 @@ export function Hero() {
           />
         </motion.div>
 
-        {/* Затемнение, нарастающее со скроллом */}
+        {/* Лёгкое тёплое затемнение для читаемости текста (не чёрное) */}
         <motion.div
           style={{ opacity: dimming }}
           aria-hidden
-          className="absolute inset-0 z-10 bg-[color:var(--color-dark)]"
+          className="absolute inset-0 z-10 bg-[#3A2E20]"
         />
 
-        {/* Виньетка для читаемости */}
+        {/* Виньетка тёплыми тонами — сверху и снизу мягкий fade для читаемости */}
         <div
           aria-hidden
           className="absolute inset-0 z-10 pointer-events-none"
           style={{
             background:
-              "linear-gradient(180deg, rgba(15,17,18,0.45) 0%, rgba(15,17,18,0.15) 30%, rgba(15,17,18,0.55) 75%, rgba(15,17,18,0.92) 100%)",
+              "linear-gradient(180deg, rgba(42,36,29,0.35) 0%, rgba(42,36,29,0.05) 30%, rgba(42,36,29,0.35) 75%, rgba(42,36,29,0.70) 100%)",
           }}
         />
 
@@ -247,12 +252,13 @@ function AnimatedStat({
   progress: MotionValue<number>;
   index: number;
 }) {
-  // Симметричный pingpong: каскадно набираются до пика 0.5, симметрично разбираются обратно
-  // от 0.5 в зеркальном порядке (последняя цифра первой ушла, первая последней).
-  const ascendStart = 0.16 + index * 0.04;
-  const ascendEnd = Math.min(0.5, ascendStart + 0.2);
-  const descendStart = Math.max(0.5, 1 - ascendEnd);
-  const descendEnd = 1 - ascendStart;
+  // Каскадный набор: индексы 0..3 стартуют с шагом 0.04
+  const ascendStart = 0.15 + index * 0.04;
+  const ascendEnd = ascendStart + 0.2;
+  // Обратный отсчёт: тот же шаг, но в зеркальном порядке.
+  // Последняя цифра (index=3) первой пошла обратно к нулю.
+  const descendStart = 0.67 - index * 0.04;
+  const descendEnd = descendStart + 0.2;
 
   const numberMV = useTransform(
     progress,

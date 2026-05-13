@@ -12,9 +12,9 @@
   --color-accent-soft: #E8D2BC;
   --color-border: #E5E2DD;
   --color-border-strong: #C8C4BD;
-  --color-dark: #0F1112;
-  --color-dark-alt: #1A1B1F;
-  --color-dark-surface: #25272D;
+  --color-dark: #221C16;
+  --color-dark-alt: #2D261E;
+  --color-dark-surface: #3A3127;
 
   --font-display: var(--font-unbounded, "Unbounded"), system-ui, sans-serif;
   --font-body: var(--font-manrope, "Manrope"), system-ui, sans-serif;
