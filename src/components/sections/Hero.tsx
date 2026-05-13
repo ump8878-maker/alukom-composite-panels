@@ -152,19 +152,12 @@ export function Hero() {
       style={{ height: "300vh" }}
     >
       <div className="sticky top-0 h-screen w-full overflow-hidden">
-        {/* Мобильная версия — статичное фото бронзового терминала, без видео */}
-        <img
-          src="/images/portfolio/airport-vlk.webp"
-          alt=""
-          aria-hidden
-          className="md:hidden absolute inset-0 w-full h-full object-cover pointer-events-none"
-        />
-        {/* Десктопный постер — последний кадр видео (широкий план здания), всегда видим */}
+        {/* Постер — последний кадр видео (широкий план здания), всегда видим под видео */}
         <img
           src="/images/hero/main.webp"
           alt=""
           aria-hidden
-          className="hidden md:block absolute inset-0 w-full h-full object-cover pointer-events-none"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
         />
         {/* Видео появляется ПОВЕРХ постера через fade-in только после прогрева,
             когда currentTime уже на финальном кадре — без мелькания первого. */}
@@ -180,7 +173,7 @@ export function Hero() {
             opacity: videoReady ? 1 : 0,
             transition: "opacity 350ms ease-out",
           }}
-          className="hidden md:block absolute inset-0 w-full h-full object-cover pointer-events-none"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
         />
 
         {/* Лёгкое тёплое затемнение для читаемости текста (не чёрное) */}
