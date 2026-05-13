@@ -32,7 +32,6 @@ export function Hero() {
   const ref = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [duration, setDuration] = useState(0);
-  const [videoReady, setVideoReady] = useState(false);
 
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -55,23 +54,18 @@ export function Hero() {
       if (stopped) return;
       if (!Number.isFinite(video.duration) || video.duration <= 0) return;
       setDuration(video.duration);
-      // Прогреваем ИЗ КОНЦА видео — сдвигаем currentTime к финалу ДО play(),
-      // чтобы во время 80ms прогрева не мелькал первый кадр (макро/угол).
-      try { video.currentTime = Math.max(0, video.duration - 0.3); } catch {}
+      // Прогрев: коротко играем чтобы декодер прокачался, потом сразу пауза
       video.play().then(() => {
         if (stopped) return;
         setTimeout(() => {
           if (stopped) return;
           video.pause();
-          try { video.currentTime = video.duration - 0.05; } catch {}
-          // Даём финальному кадру отрисоваться, потом fade-in поверх poster'а
-          setTimeout(() => { if (!stopped) setVideoReady(true); }, 60);
+          // Стартовое состояние = последний кадр (широкий план здания)
+          video.currentTime = video.duration - 0.05;
         }, 80);
       }).catch(() => {
-        if (stopped) return;
+        // autoplay заблокирован — всё равно пробуем скруббить
         video.pause();
-        try { video.currentTime = video.duration - 0.05; } catch {}
-        setVideoReady(true);
       });
     };
 
@@ -137,27 +131,16 @@ export function Hero() {
       style={{ height: "300vh" }}
     >
       <div className="sticky top-0 h-screen w-full overflow-hidden">
-        {/* Постер всегда видим — это финальный кадр здания, тот же что и старт scrubbing'a */}
-        <img
-          src="/images/hero/main.webp"
-          alt=""
-          aria-hidden
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-        />
-        {/* Видео появляется ПОВЕРХ постера только после прогрева, когда currentTime
-            уже на финальном кадре — без мелькания первого (макро) кадра. */}
+        {/* Видео-фон со scroll scrubbing. Poster держит первый кадр пока подгружается mp4. */}
         <video
           ref={videoRef}
           src="/video/material-to-building-scrub.mp4"
+          poster="/images/hero/main.webp"
           muted
           playsInline
           preload="auto"
           tabIndex={-1}
           aria-hidden
-          style={{
-            opacity: videoReady ? 1 : 0,
-            transition: "opacity 250ms ease-out",
-          }}
           className="absolute inset-0 w-full h-full object-cover pointer-events-none"
         />
 
