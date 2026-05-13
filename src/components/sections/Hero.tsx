@@ -55,20 +55,38 @@ export function Hero() {
       if (stopped) return;
       if (!Number.isFinite(video.duration) || video.duration <= 0) return;
       setDuration(video.duration);
-      // Прогрев: коротко играем чтобы декодер прокачался, потом сразу пауза
+
+      // Сдвигаем currentTime к ФИНАЛУ ДО play() — прогрев играет последний отрезок видео,
+      // а не первый кадр (макро). Пользователь всё равно не видит — video.opacity=0.
+      try { video.currentTime = Math.max(0, video.duration - 0.4); } catch {}
+
+      const finalize = () => {
+        if (stopped) return;
+        // Слушаем "seeked" — браузер отрисовал финальный кадр → fade-in
+        const onSeeked = () => {
+          video.removeEventListener("seeked", onSeeked);
+          clearTimeout(fallbackTimer);
+          if (!stopped) setVideoReady(true);
+        };
+        const fallbackTimer = setTimeout(() => {
+          video.removeEventListener("seeked", onSeeked);
+          if (!stopped) setVideoReady(true);
+        }, 700);
+        video.addEventListener("seeked", onSeeked);
+        try { video.currentTime = video.duration - 0.05; } catch {}
+      };
+
       video.play().then(() => {
         if (stopped) return;
         setTimeout(() => {
           if (stopped) return;
           video.pause();
-          video.currentTime = video.duration - 0.05;
-          // Даём финальному кадру отрисоваться, потом показываем видео поверх постера
-          setTimeout(() => { if (!stopped) setVideoReady(true); }, 80);
+          finalize();
         }, 80);
       }).catch(() => {
         if (stopped) return;
         video.pause();
-        setVideoReady(true);
+        finalize();
       });
     };
 
