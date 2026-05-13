@@ -32,6 +32,7 @@ export function Hero() {
   const ref = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [duration, setDuration] = useState(0);
+  const [videoReady, setVideoReady] = useState(false);
 
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -60,12 +61,14 @@ export function Hero() {
         setTimeout(() => {
           if (stopped) return;
           video.pause();
-          // Стартовое состояние = последний кадр (широкий план здания)
           video.currentTime = video.duration - 0.05;
+          // Даём финальному кадру отрисоваться, потом показываем видео поверх постера
+          setTimeout(() => { if (!stopped) setVideoReady(true); }, 80);
         }, 80);
       }).catch(() => {
-        // autoplay заблокирован — всё равно пробуем скруббить
+        if (stopped) return;
         video.pause();
+        setVideoReady(true);
       });
     };
 
@@ -131,17 +134,35 @@ export function Hero() {
       style={{ height: "300vh" }}
     >
       <div className="sticky top-0 h-screen w-full overflow-hidden">
-        {/* Видео-фон со scroll scrubbing. Poster держит первый кадр пока подгружается mp4. */}
+        {/* Мобильная версия — статичное фото бронзового терминала, без видео */}
+        <img
+          src="/images/portfolio/airport-vlk.webp"
+          alt=""
+          aria-hidden
+          className="md:hidden absolute inset-0 w-full h-full object-cover pointer-events-none"
+        />
+        {/* Десктопный постер — последний кадр видео (широкий план здания), всегда видим */}
+        <img
+          src="/images/hero/main.webp"
+          alt=""
+          aria-hidden
+          className="hidden md:block absolute inset-0 w-full h-full object-cover pointer-events-none"
+        />
+        {/* Видео появляется ПОВЕРХ постера через fade-in только после прогрева,
+            когда currentTime уже на финальном кадре — без мелькания первого. */}
         <video
           ref={videoRef}
           src="/video/material-to-building-scrub.mp4"
-          poster="/images/hero/main.webp"
           muted
           playsInline
           preload="auto"
           tabIndex={-1}
           aria-hidden
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+          style={{
+            opacity: videoReady ? 1 : 0,
+            transition: "opacity 350ms ease-out",
+          }}
+          className="hidden md:block absolute inset-0 w-full h-full object-cover pointer-events-none"
         />
 
         {/* Лёгкое тёплое затемнение для читаемости текста (не чёрное) */}
