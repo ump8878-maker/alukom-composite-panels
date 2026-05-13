@@ -13,3 +13,4 @@ tsconfig.tsbuildinfo
 # Исходники PNG из Higgsfield (~30 МБ каждый) — не нужны в bundle/git.
 # Финальные WebP лежат в public/images/ — они и попадают в repo.
 photo/
+.vercel

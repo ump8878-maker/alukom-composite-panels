@@ -1,0 +1,9 @@
+node_modules
+.next
+out
+build
+.turbo
+.git
+photo
+*.log
+.DS_Store
