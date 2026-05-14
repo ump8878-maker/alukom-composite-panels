@@ -14,3 +14,5 @@ tsconfig.tsbuildinfo
 # Финальные WebP лежат в public/images/ — они и попадают в repo.
 photo/
 .vercel
+
+*.mov

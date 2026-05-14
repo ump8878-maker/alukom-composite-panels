@@ -149,7 +149,7 @@ export function Hero() {
       ref={ref}
       id="top"
       className="relative bg-[#2A241D]"
-      style={{ height: "300vh" }}
+      style={{ height: "420vh" }}
     >
       <div className="sticky top-0 h-screen w-full overflow-hidden">
         {/* Постер — последний кадр видео (широкий план здания), всегда видим под видео */}
