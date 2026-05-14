@@ -6,4 +6,6 @@ build
 .git
 photo
 *.log
+*.mov
+*.MOV
 .DS_Store
